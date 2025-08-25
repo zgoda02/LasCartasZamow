@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>System Zamówień — API</title>
+  <meta name="robots" content="noindex" />
+  <style>
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#0b1220;color:#fff}
+    .container{max-width:1100px;margin:0 auto;padding:24px}
+    .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:16px;margin-bottom:14px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+    .btn{border:none;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer;background:rgba(255,255,255,.08);color:#fff}
+    .btn-primary{background:rgba(59,130,246,.25)}
+    .btn-success{background:rgba(34,197,94,.25)}
+    .btn-danger{background:rgba(239,68,68,.25)}
+    .select,.input{padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.18);outline:none}
+    .pill{min-width:38px;text-align:center;font-weight:900;background:rgba(255,255,255,.06);padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.06)}
+    .item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card row" style="justify-content:space-between">
+      <div class="row">
+        <strong>System Zamówień (API)</strong>
+        <span id="userBadge" class="pill">Gość</span>
+      </div>
+      <div class="row">
+        <select id="tierSelect" class="select">
+          <option value="H">Członek (H)</option>
+          <option value="S">Zasłużony (S)</option>
+        </select>
+        <input id="searchInput" class="input" placeholder="Szukaj..." />
+        <button class="btn" id="loginBtn">Zaloguj admin</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="row"><strong>Przedmioty</strong></div>
+        <div class="row">
+          <button class="btn btn-success" id="placeBtn">✅ Złóż zamówienie</button>
+        </div>
+      </div>
+      <div id="itemsWrap" class="grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <strong>Historia</strong>
+        <button class="btn" id="refreshHist">Odśwież</button>
+      </div>
+      <div id="historyWrap"></div>
+    </div>
+  </div>
+
+<script>
+const API_BASE = localStorage.getItem('API_BASE') || 'http://localhost:3000'
+let token = ''
+let tier = localStorage.getItem('tier') || 'H'
+let cart = {}
+
+const $ = s=>document.querySelector(s)
+const $el = (tag, attrs={})=>Object.assign(document.createElement(tag), attrs)
+
+function formatPrice(n){
+  if(n>=1_000_000) return (n/1_000_000).toFixed(1)+'M$'
+  if(n>=1_000) return Math.round(n/1_000)+'k$'
+  return n+'$'
+}
+
+async function api(path, opts={}){
+  const res = await fetch(API_BASE+path, {
+    ...opts,
+    headers: {
+      'Content-Type':'application/json',
+      ...(opts.headers||{}),
+      ...(token? {'Authorization':'Bearer '+token}:{})
+    }
+  })
+  if(!res.ok){
+    const t = await res.text().catch(()=> '')
+    throw new Error(`${res.status} ${res.statusText} ${t}`)
+  }
+  return res.json()
+}
+
+async function loadItems(){
+  const data = await api('/items')
+  const wrap = $('#itemsWrap')
+  wrap.innerHTML = ''
+  cart = {}
+  data.items.forEach(it=>{
+    cart[it.id]=0
+    const card = $el('div',{className:'item'})
+    card.innerHTML = `
+      <div style="font-weight:900">${it.name}</div>
+      <div style="opacity:.9">${it.category}${it.unit? ' · '+it.unit:''}</div>
+      <div class="row" style="margin-top:8px;justify-content:space-between">
+        <div class="pill">Cennik: ${tier==='H'?'Członek (H)':'Zasłużony (S)'}</div>
+        <div class="pill">${formatPrice(tier==='H'?it.priceH:it.priceS)}</div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn btn-danger" data-id="${it.id}">−</button>
+        <div class="pill" id="qty-${it.id}">0</div>
+        <button class="btn btn-success" data-id="${it.id}">+</button>
+      </div>
+    `
+    const [minus, , plus] = card.querySelectorAll('button')
+    minus.onclick = ()=> changeQty(it.id,-1)
+    plus.onclick = ()=> changeQty(it.id,1)
+    wrap.appendChild(card)
+  })
+}
+
+function changeQty(id,delta){
+  cart[id]=Math.max(0,(cart[id]||0)+delta)
+  const pill = document.getElementById('qty-'+id)
+  if(pill) pill.textContent = cart[id]
+}
+
+async function placeOrder(){
+  const lines = Object.entries(cart).filter(([,q])=>q>0).map(([id,q])=>({id, qty:q}))
+  if(lines.length===0){ alert('Koszyk pusty'); return }
+  const res = await api('/orders', { method:'POST', body: JSON.stringify({ tier, lines }) })
+  alert('Zamówienie złożone. Suma: '+formatPrice(res.total))
+  await refreshHistory()
+  await loadItems()
+}
+
+async function refreshHistory(){
+  const data = await api('/orders')
+  const wrap = $('#historyWrap')
+  wrap.innerHTML=''
+  data.orders.forEach(o=>{
+    const div = $el('div', { className:'item' })
+    const items = o.items.map(i=> `${i.name} × ${i.qty} — ${formatPrice(i.price)} = ${formatPrice(i.subtotal)}`).join('<br>')
+    div.innerHTML = `
+      <div><strong>${new Date(o.at).toLocaleString()}</strong> · ${o.id}</div>
+      <div style="opacity:.9">Tier: ${o.tier}</div>
+      <div style="margin-top:6px">${items}</div>
+      <div style="margin-top:6px;font-weight:900">Suma: ${formatPrice(o.total)}</div>
+    `
+    wrap.appendChild(div)
+  })
+}
+
+async function adminLogin(){
+  const password = prompt('Hasło admina (domyślnie admin123):','')
+  if(!password) return
+  try{
+    const res = await api('/login',{ method:'POST', body: JSON.stringify({ password }) })
+    token = res.token
+    $('#userBadge').textContent = 'Administrator'
+  }catch(e){
+    alert('Błędne hasło')
+  }
+}
+
+async function boot(){
+  $('#tierSelect').value = tier
+  $('#tierSelect').onchange = async (e)=>{
+    tier = e.target.value
+    localStorage.setItem('tier', tier)
+    await loadItems()
+  }
+  $('#placeBtn').onclick = placeOrder
+  $('#loginBtn').onclick = adminLogin
+  $('#refreshHist').onclick = refreshHistory
+  $('#searchInput').oninput = (e)=>{
+    const q = (e.target.value||'').toLowerCase()
+    document.querySelectorAll('#itemsWrap .item').forEach(card=>{
+      const name = card.querySelector('div').textContent.toLowerCase()
+      card.style.display = name.includes(q) ? '' : 'none'
+    })
+  }
+  await loadItems()
+  await refreshHistory()
+}
+boot()
+</script>
+</body>
+</html>

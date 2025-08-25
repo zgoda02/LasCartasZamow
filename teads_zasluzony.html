@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>System Zamówień — Pełna wersja (odświeżona)</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧾%3C/text%3E%3C/svg%3E">
+  <style>
+    /* ================= Reset & Base ================= */
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:#fff;
+      background:linear-gradient(135deg,#0b1220 0%,#5b1b84 50%,#0b1220 100%);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    a{color:inherit;text-decoration:none}
+    .container{max-width:1200px;margin:0 auto;padding:28px 22px}
+    .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+    .center{display:flex;align-items:center;justify-content:center}
+    .hidden{display:none !important}
+
+    /* ================= Spacing helpers ================= */
+    .stack-s{display:flex;flex-direction:column;gap:8px}
+    .stack-m{display:flex;flex-direction:column;gap:12px}
+    .stack-l{display:flex;flex-direction:column;gap:18px}
+
+    /* ================= Glass Cards ================= */
+    .card{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:16px;
+      padding:20px;
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      box-shadow:0 12px 32px rgba(0,0,0,.45);
+    }
+    .card-title{font-weight:800;font-size:1.1rem;color:#c4b5fd;margin:0 0 10px}
+
+    /* ================= Header & Buttons ================= */
+    .app-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-logo{
+      width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+      background:rgba(168,85,247,.2);border:1px solid rgba(196,181,253,.25);font-size:22px
+    }
+    .badge{
+      background:rgba(249,115,22,.18);
+      border:1px solid rgba(250,204,21,.18);
+      color:#fde68a;padding:6px 10px;border-radius:999px;font-weight:800;font-size:13px
+    }
+    .btn{
+      border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;transition:.2s transform
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btn-ghost{background:rgba(255,255,255,.06);color:#e5e7eb;border:1px solid rgba(255,255,255,.08)}
+    .btn-primary{background:rgba(59,130,246,.2);color:#c4b5fd;border:1px solid rgba(147,197,253,.18)}
+    .btn-success{background:rgba(34,197,94,.18);color:#bbf7d0;border:1px solid rgba(74,222,128,.15)}
+    .btn-danger{background:rgba(239,68,68,.18);color:#fecaca;border:1px solid rgba(248,113,113,.15)}
+    .btn-warning{background:rgba(234,179,8,.18);color:#fde68a;border:1px solid rgba(250,204,21,.12)}
+
+    /* ================= Select / Inputs ================= */
+    .select,.input{
+      appearance:none;-webkit-appearance:none;
+      padding:10px 14px;font-weight:900;border-radius:10px;
+      border:2px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.97);color:#0b1220;font-size:14px;outline:none;
+      box-shadow:0 4px 10px rgba(11,18,32,.25)
+    }
+    .select:focus,.input:focus{border-color:rgba(168,85,247,.5);box-shadow:0 6px 18px rgba(24,24,48,.35)}
+
+    /* ================= Toolbar (auto-wrap grid) ================= */
+    .toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:center}
+    .toolbar .btn,.toolbar label.btn{width:100%;justify-content:center}
+
+    /* ================= Grid & Items ================= */
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+    .item{position:relative;overflow:visible}
+    .item .item-body{padding:12px}
+    .item .item-name{font-weight:900;font-size:1rem;color:#fff}
+    .item .price-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:12px;flex-wrap:wrap}
+    .tier{font-size:12px;padding:6px 8px;border-radius:8px;background:rgba(59,130,246,.15);color:#bfdbfe;border:1px solid rgba(147,197,253,.12);font-weight:800}
+    .value{font-weight:900;padding:6px 10px;border-radius:8px;background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(74,222,128,.12)}
+    .qty{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+    .pill{min-width:38px;text-align:center;font-weight:900;background:rgba(255,255,255,.06);padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.06)}
+
+    /* ✖ corner delete: widoczny tylko dla admina */
+    .corner-delete{
+      position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:999px;border:none;
+      background:rgba(239,68,68,.9);color:#fff;display:none;align-items:center;justify-content:center;
+      font-weight:900;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.45)
+    }
+    body.admin .corner-delete{display:flex}
+
+    /* Admin-only helper */
+    .admin-only{display:none}
+    body.admin .admin-only{display:inline-flex}
+
+    /* ================= Modals ================= */
+    .modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:60;padding:16px}
+    .modal{max-width:620px;width:100%}
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .label{font-size:12px;opacity:.85}
+    .input.dark{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+    th{text-align:left;color:#c4b5fd;font-weight:900}
+
+    /* ================= Toasts ================= */
+    #toastStack{position:fixed;top:16px;right:16px;display:flex;flex-direction:column;gap:10px;z-index:80}
+    .toast{min-width:260px;max-width:360px;padding:12px 14px;border-radius:12px;color:#0b1220;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.35);font-weight:800;opacity:0;transform:translateY(-10px) scale(.98);animation:toast-in .18s ease-out forwards}
+    .toast-success{background:#bbf7d0}
+    .toast-error{background:#fecaca}
+    .toast-info{background:#bfdbfe}
+    .toast small{display:block;font-weight:600;opacity:.8;margin-top:4px}
+    @keyframes toast-in{to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes toast-out{to{opacity:0;transform:translateY(-8px) scale(.98)}}
+
+    /* ================= Animacje usuwania ================= */
+    @keyframes vanish{to{opacity:0;transform:translateY(-6px) scale(.98)}}
+    .vanish{animation:vanish .25s ease forwards}
+
+    /* ================= Responsive tweaks ================= */
+    @media (max-width:840px){
+      .controls-split{display:grid;grid-template-columns:1fr;gap:14px}
+    }
+    @media (max-width:520px){
+      .brand-logo{width:40px;height:40px;font-size:18px}
+      .select{font-size:13px;padding:8px 10px}
+    }
+  </style>
+</head>
+<body>
+  <!-- ================ LOGIN ================ -->
+  <section id="loginScreen" class="center" style="height:100vh;padding:24px">
+    <div class="card" style="max-width:460px;text-align:center">
+      <div style="font-size:22px;font-weight:900;margin-bottom:6px">🔐 System Zamówień</div>
+      <div class="kicker" style="opacity:.9">Zaloguj się jako Gość lub Administrator</div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-success" onclick="login('guest')">👤 Zaloguj jako Gość</button>
+        <button class="btn btn-primary" onclick="openAdminLogin()">⚙️ Panel Administratora</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================ APP ================ -->
+  <main id="mainApp" class="hidden">
+    <div class="container stack-l">
+      <!-- Header -->
+      <div class="card app-header">
+        <div class="brand">
+          <div class="brand-logo">🧮</div>
+          <div>
+            <div style="font-weight:900">System Zamówień</div>
+            <div class="kicker" style="opacity:.9">Wersja demo (frontend). Dane w przeglądarce.</div>
+          </div>
+        </div>
+        <div class="row">
+          <span id="userBadge" class="badge">Gość</span>
+          <button class="btn btn-ghost" onclick="logout()">🚪 Wyloguj</button>
+        </div>
+      </div>
+
+      <!-- Controls (podzielone i niewchodzące na siebie) -->
+      <div class="card stack-m">
+        <div class="controls-split" style="display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center">
+          <div class="row" style="align-items:center;gap:12px">
+            <label for="tierSelect" style="font-weight:800;color:#cbd5e1">Rodzaj użytkownika</label>
+            <select id="tierSelect" class="select" onchange="setTier(this.value)">
+              <option value="H">Członek (H)</option>
+              <option value="S">Zasłużony (S)</option>
+            </select>
+          </div>
+          <!-- Wyszukiwarka -->
+          <div class="row" style="justify-content:flex-end;gap:10px">
+            <input id="searchInput" class="input" placeholder="Szukaj przedmiotu..." oninput="setSearch(this.value)" />
+          </div>
+        </div>
+
+        <!-- Pasek narzędzi admina w siatce - już się nie nakłada i ładnie się łamie -->
+        <div class="toolbar admin-only">
+          <button id="editBtn" class="btn btn-warning" onclick="toggleEditMode()">✏️ Tryb edycji: WYŁ</button>
+          <button class="btn btn-success" onclick="openAddModal()">➕ Dodaj przedmiot</button>
+          <button class="btn btn-primary" onclick="exportData()">📦 Eksport</button>
+          <label class="btn btn-ghost" for="importFile">📥 Import JSON</label>
+          <input id="importFile" class="hidden" type="file" accept="application/json" onchange="importData(event)">
+          <button class="btn btn-ghost" onclick="openHistory()">📜 Historia zamówień</button>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <section class="row" style="gap:18px">
+        <div class="card" style="flex:1 1 360px;min-width:300px">
+          <h3 class="card-title">🔫 Klamoty</h3>
+          <div id="cat-klamoty" class="grid"></div>
+        </div>
+        <div class="card" style="flex:1 1 360px;min-width:300px">
+          <h3 class="card-title">🛡️ Dodatki</h3>
+          <div id="cat-dodatki" class="grid"></div>
+        </div>
+        <div class="card" style="flex:1 1 360px;min-width:300px">
+          <h3 class="card-title">🔹 Ammo</h3>
+          <div id="cat-ammo" class="grid"></div>
+        </div>
+      </section>
+
+      <!-- Summary -->
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+        <div class="totals" style="font-weight:900;background:rgba(168,85,247,.22);border:1px solid rgba(196,181,253,.3);padding:10px 14px;border-radius:10px">
+          Przedmioty: <span id="totalCount">0</span> &nbsp;|&nbsp; Suma: <span id="totalPrice">0$</span>
+        </div>
+        <div class="row">
+          <button class="btn btn-danger" onclick="resetCart()">🧹 Wyzeruj koszyk</button>
+          <button class="btn btn-success" onclick="placeOrder()">✅ Złóż zamówienie (demo)</button>
+        </div>
+      </div>
+
+      <!-- Export preview -->
+      <div id="exportPreview" class="card hidden">
+        <h3 class="card-title">Podgląd danych</h3>
+        <div id="exportTableWrap"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================ ADD ITEM MODAL ================ -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="card modal">
+      <h3 class="card-title">➕ Dodaj nowy przedmiot</h3>
+      <div class="row" style="gap:12px;flex-wrap:wrap">
+        <div class="field" style="flex:1 1 160px">
+          <label class="label">Kategoria</label>
+          <select id="newCategory" class="input dark">
+            <option value="klamoty">Klamoty</option>
+            <option value="dodatki">Dodatki</option>
+            <option value="ammo">Ammo</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1 1 160px">
+          <label class="label">Id (unikalne, bez spacji)</label>
+          <input id="newId" class="input dark" placeholder="np. vintek">
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Nazwa</label>
+        <input id="newName" class="input dark" placeholder="np. Vintek">
+      </div>
+      <div class="row" style="gap:12px;flex-wrap:wrap">
+        <div class="field" style="flex:1 1 160px">
+          <label class="label">Cena Członek (H)</label>
+          <input id="newPriceH" type="number" class="input dark" placeholder="np. 300000">
+        </div>
+        <div class="field" style="flex:1 1 160px">
+          <label class="label">Cena Zasłużony (S)</label>
+          <input id="newPriceS" type="number" class="input dark" placeholder="np. 270000">
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Jednostka (opcjonalnie)</label>
+        <input id="newUnit" class="input dark" placeholder="np. szt.">
+      </div>
+      <div class="row" style="justify-content:flex-end;margin-top:12px">
+        <button class="btn btn-ghost" onclick="closeAddModal()">Anuluj</button>
+        <button class="btn btn-success" onclick="saveNewItem()">Zapisz</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================ ADMIN LOGIN MODAL ================ -->
+  <div id="adminLoginModal" class="modal-backdrop">
+    <div class="card modal">
+      <h3 class="card-title">🔑 Logowanie Administratora</h3>
+      <div class="field">
+        <label class="label">Login</label>
+        <input id="adminLogin" class="input dark" placeholder="admin">
+      </div>
+      <div class="field">
+        <label class="label">Hasło</label>
+        <input id="adminPass" type="password" class="input dark" placeholder="••••••">
+      </div>
+      <div class="row" style="justify-content:flex-end;margin-top:12px">
+        <button class="btn btn-ghost" onclick="closeAdminLogin()">Anuluj</button>
+        <button class="btn btn-primary" onclick="submitAdminLogin()">Zaloguj</button>
+      </div>
+      <div style="margin-top:10px;font-size:13px;color:#cbd5e1">Demo: dowolny login, hasło <b>admin123</b>.</div>
+    </div>
+  </div>
+
+  <!-- ================ HISTORY MODAL ================ -->
+  <div id="historyModal" class="modal-backdrop">
+    <div class="card modal">
+      <h3 class="card-title">📜 Historia zamówień</h3>
+      <div id="historyWrap" style="max-height:50vh;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px"></div>
+      <div class="row" style="justify-content:space-between;margin-top:12px">
+        <div class="row">
+          <button class="btn btn-ghost" onclick="exportHistory()">⬇️ Eksport historii</button>
+          <button class="btn btn-danger" onclick="clearHistory()">🗑️ Wyczyść historię</button>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary" onclick="closeHistory()">Zamknij</button>
+        </div>
+      </div>
+      <small style="opacity:.85">Historia jest zapisywana lokalnie w Twojej przeglądarce.</small>
+    </div>
+  </div>
+
+  <!-- Toast stack -->
+  <div id="toastStack"></div>
+
+  <script>
+    /* ===================== Helpers / State ===================== */
+    const $ = (s)=>document.querySelector(s);
+    const $$ = (s)=>Array.from(document.querySelectorAll(s));
+
+    let currentUser = null;   // 'guest' | 'admin'
+    let currentTier = 'H';    // 'H' | 'S'
+    let editMode = false;
+    let cart = {};
+    let items = {};
+    let query = '';
+
+    const DEFAULT_DATA = {
+      klamoty: {
+        vintek:   { name:'Vintek',    unit:'',    prices:{ H:300000, S:270000 } },
+        pistol:   { name:'Pistolet',  unit:'',    prices:{ H: 75000, S: 50000 } },
+        taser:    { name:'Taser',     unit:'',    prices:{ H:120000, S:100000 } }
+      },
+      dodatki: {
+        kajdanki: { name:'Kajdanki',  unit:'',    prices:{ H:150000, S:125000 } },
+        kamizelka:{ name:'Kamizelka', unit:'',    prices:{ H:250000, S:200000 } },
+        latarka:  { name:'Latarka',   unit:'',    prices:{ H: 15000, S: 10000 } }
+      },
+      ammo: {
+        ammo9:    { name:'Ammo 9mm',  unit:'szt.',prices:{ H:  1500, S:  1250 } },
+        ammo556:  { name:'Ammo 5.56', unit:'szt.',prices:{ H:  2500, S:  2200 } }
+      }
+    };
+
+    /* ===================== UI Utils ===================== */
+    function formatPrice(n){
+      if(n>=1_000_000) return (n/1_000_000).toFixed(1)+'M$';
+      if(n>=1_000) return Math.round(n/1_000)+'k$';
+      return n+'$';
+    }
+    function parsePrice(str){
+      const s=(str||'').toString().trim().toLowerCase().replace(/\$/g,'').replace(/\s/g,'');
+      if(!s) return NaN;
+      if(/m$/.test(s)) return Math.round(parseFloat(s)*1_000_000);
+      if(/k$/.test(s)) return Math.round(parseFloat(s)*1_000);
+      return parseInt(s,10);
+    }
+    function escapeHtml(s){return (s??'').toString().replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'}[m]))}
+    function uid(){return 'o_'+Math.random().toString(36).slice(2)+Date.now().toString(36)}
+
+    /* ===================== Toasts ===================== */
+    function showToast(msg,type='info',subtitle=''){
+      const stack = $('#toastStack');
+      const t = document.createElement('div');
+      t.className = `toast toast-${type}`;
+      t.innerHTML = `${escapeHtml(msg)}${subtitle?`<small>${escapeHtml(subtitle)}</small>`:''}`;
+      stack.appendChild(t);
+      const close = ()=>{ t.style.animation = 'toast-out .16s ease forwards'; setTimeout(()=>t.remove(),160); };
+      setTimeout(close, 2800);
+      t.addEventListener('click', close);
+    }
+
+    /* ===================== Search ===================== */
+    function setSearch(v){
+      query=(v||'').toLowerCase();
+      renderAll();
+    }
+
+    /* ===================== Auth & Tier ===================== */
+    function openAdminLogin(){ $('#adminLoginModal').style.display='flex'; setTimeout(()=>$('#adminLogin').focus(),50); }
+    function closeAdminLogin(){ $('#adminLoginModal').style.display='none'; }
+    function submitAdminLogin(){
+      const pass=$('#adminPass').value;
+      if(pass==='admin123'){ closeAdminLogin(); login('admin'); showToast('Zalogowano jako Administrator','success'); }
+      else showToast('Nieprawidłowe hasło (demo: admin123)','error');
+    }
+
+    function login(type){
+      currentUser=type;
+      $('#loginScreen').classList.add('hidden');
+      $('#mainApp').classList.remove('hidden');
+      $('#userBadge').textContent = type==='admin' ? 'Administrator' : 'Gość';
+      document.body.classList.toggle('admin', type==='admin');
+      $$('.admin-only').forEach(el=> el.style.display = (type==='admin') ? '' : 'none');
+      loadState();
+      renderAll();
+    }
+    function logout(){ currentUser=null; document.body.classList.remove('admin'); location.reload(); }
+    function setTier(v){ currentTier=v; saveState(); renderAll(); showToast('Zmieniono rodzaj użytkownika','info', v==='H'?'Członek (H)':'Zasłużony (S)'); }
+
+    /* ===================== Storage ===================== */
+    function loadState(){
+      const savedItems = localStorage.getItem('itemsData');
+      items = savedItems ? JSON.parse(savedItems) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+      const savedTier = localStorage.getItem('tier');
+      if(savedTier){ currentTier=savedTier; $('#tierSelect').value=currentTier; }
+      initCart();
+    }
+    function saveState(){
+      localStorage.setItem('itemsData', JSON.stringify(items));
+      localStorage.setItem('tier', currentTier);
+    }
+
+    /* ===================== Cart ===================== */
+    function initCart(){
+      cart={};
+      Object.keys(items).forEach(cat=>Object.keys(items[cat]).forEach(id=>cart[id]=0));
+      updateTotals();
+    }
+    function changeQty(id,delta){
+      cart[id]=Math.max(0,(cart[id]||0)+delta);
+      const pill=$('#qty-'+id); if(pill) pill.textContent=cart[id];
+      updateTotals();
+    }
+    function updateTotals(){
+      let count=0,sum=0;
+      Object.keys(items).forEach(cat=>{
+        Object.keys(items[cat]).forEach(id=>{
+          const it=items[cat][id];
+          if(query && !it.name.toLowerCase().includes(query)) return; // filtr sumy zgodnie z widokiem
+          const q=cart[id]||0;
+          count+=q; sum+= q*(it.prices[currentTier]||0);
+        });
+      });
+      $('#totalCount').textContent=count;
+      $('#totalPrice').textContent=formatPrice(sum);
+    }
+    function resetCart(){
+      Object.keys(cart).forEach(k=>cart[k]=0);
+      $$('[id^="qty-"]').forEach(p=>p.textContent='0');
+      updateTotals();
+      showToast('Koszyk wyczyszczony','info');
+    }
+
+    /* ===================== Render ===================== */
+    function renderAll(){
+      renderCategory('klamoty','#cat-klamoty');
+      renderCategory('dodatki','#cat-dodatki');
+      renderCategory('ammo','#cat-ammo');
+      updateTotals();
+    }
+    function renderCategory(catKey, mountSel){
+      const mount=$(mountSel); mount.innerHTML='';
+      const data=items[catKey]||{};
+      Object.keys(data).forEach(id=>{
+        const it=data[id];
+        if(query && !it.name.toLowerCase().includes(query)) return; // filtr po nazwie
+        const card=document.createElement('div');
+        card.className='item card';
+        card.setAttribute('data-key', `${catKey}:${id}`);
+        card.innerHTML=`
+          <button class="corner-delete" title="Usuń" onclick="deleteItem('${catKey}','${id}', this)">✖</button>
+          <div class="item-body">
+            <div class="item-name" ${editMode?'contenteditable="true"':''} data-field="name" data-id="${id}" data-cat="${catKey}">${escapeHtml(it.name)}</div>
+            <div class="price-row">
+              <div class="tier">Cennik: ${currentTier==='H'?'Członek (H)':'Zasłużony (S)'} ${it.unit?`· ${escapeHtml(it.unit)}`:''}</div>
+              <div class="value" ${editMode?'contenteditable="true"':''} data-field="price" data-id="${id}" data-cat="${catKey}">${formatPrice(it.prices[currentTier])}</div>
+            </div>
+            <div class="qty">
+              <button class="btn btn-danger" onclick="changeQty('${id}',-1)">−</button>
+              <div class="pill" id="qty-${id}">${cart[id]||0}</div>
+              <button class="btn btn-success" onclick="changeQty('${id}',1)">+</button>
+              <div style="flex:1"></div>
+              <button class="btn btn-ghost admin-only ${editMode?'':'hidden'}" onclick="deleteItem('${catKey}','${id}', this)">🗑️ Usuń</button>
+            </div>
+          </div>
+        `;
+        mount.appendChild(card);
+      });
+
+      if(editMode){
+        mount.querySelectorAll('[contenteditable="true"]').forEach(el=>{
+          el.addEventListener('blur', handleEditBlur);
+          el.addEventListener('keydown', e=>{if(e.key==='Enter'){e.preventDefault(); el.blur();}});
+        });
+      }
+    }
+    function handleEditBlur(e){
+      const el=e.target;
+      const id=el.getAttribute('data-id');
+      const cat=el.getAttribute('data-cat');
+      const field=el.getAttribute('data-field');
+      if(field==='name'){
+        const val=el.textContent.trim();
+        if(val){ items[cat][id].name=val; showToast('Zmieniono nazwę','success', val); }
+        else el.textContent = items[cat][id].name;
+      }else if(field==='price'){
+        const parsed = parsePrice(el.textContent);
+        if(!isNaN(parsed)){ items[cat][id].prices[currentTier]=parsed; el.textContent=formatPrice(parsed); showToast('Zmieniono cenę','success', formatPrice(parsed)); }
+        else el.textContent = formatPrice(items[cat][id].prices[currentTier]);
+      }
+      saveState(); updateTotals();
+    }
+
+    /* ===================== Deleting with animation ===================== */
+    function deleteItem(cat,id,btn){
+      if(currentUser!=='admin') return;
+      if(!confirm(`Na pewno usunąć „${items[cat][id].name}”?`)) return;
+      const card = document.querySelector(`[data-key="${cat}:${id}"]`);
+      const after = ()=>{
+        delete items[cat][id];
+        delete cart[id];
+        saveState();
+        renderAll();
+        showToast('Usunięto przedmiot','success', id);
+      };
+      if(card){
+        card.classList.add('vanish');
+        card.addEventListener('animationend', after, { once:true });
+      }else after();
+    }
+
+    /* ===================== Add Item Modal ===================== */
+    function openAddModal(){
+      if(currentUser!=='admin') return;
+      $('#modalBackdrop').style.display='flex';
+      $('#newCategory').value='klamoty';
+      $('#newId').value=''; $('#newName').value='';
+      $('#newPriceH').value=''; $('#newPriceS').value='';
+      $('#newUnit').value='';
+      setTimeout(()=>$('#newId').focus(),60);
+    }
+    function closeAddModal(){ $('#modalBackdrop').style.display='none'; }
+    function saveNewItem(){
+      const cat=$('#newCategory').value;
+      const id=($('#newId').value||'').trim();
+      const name=($('#newName').value||'').trim();
+      const pH=parseInt($('#newPriceH').value,10);
+      const pS=parseInt($('#newPriceS').value,10);
+      const unit=($('#newUnit').value||'').trim();
+      if(!id || !name || isNaN(pH) || isNaN(pS)){ showToast('Uzupełnij ID, nazwę i obie ceny','error'); return; }
+      if(!items[cat]) items[cat]={};
+      if(items[cat][id]){ showToast('ID już istnieje','error', id); return; }
+      items[cat][id]={ name, unit, prices:{H:pH,S:pS} };
+      cart[id]=0;
+      saveState(); closeAddModal(); renderAll();
+      showToast('Dodano przedmiot','success', name);
+    }
+
+    /* ===================== Export / Import ===================== */
+    function exportData(){
+      const data = { items, meta:{ exportedAt:new Date().toISOString(), tier:currentTier } };
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='items-export.json';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      previewExport();
+      showToast('Wyeksportowano dane','success');
+    }
+    function previewExport(){
+      const wrap=$('#exportTableWrap'); wrap.innerHTML='';
+      const tbl=document.createElement('table');
+      tbl.innerHTML = `<thead><tr><th>Kategoria</th><th>ID</th><th>Nazwa</th><th>Jednostka</th><th>Cena H</th><th>Cena S</th></tr></thead>`;
+      const tbody=document.createElement('tbody');
+      Object.keys(items).forEach(cat=>{
+        Object.keys(items[cat]).forEach(id=>{
+          const it=items[cat][id];
+          const tr=document.createElement('tr');
+          tr.innerHTML = `<td>${cat}</td><td>${id}</td><td>${escapeHtml(it.name)}</td><td>${escapeHtml(it.unit||'')}</td><td>${it.prices.H}</td><td>${it.prices.S}</td>`;
+          tbody.appendChild(tr);
+        });
+      });
+      tbl.appendChild(tbody); wrap.appendChild(tbl);
+      $('#exportPreview').classList.remove('hidden');
+    }
+    function importData(evt){
+      const file=evt.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=(e)=>{
+        try{
+          const data=JSON.parse(e.target.result);
+          if(!data.items) throw new Error('Brak pola items.');
+          items=data.items; saveState(); initCart(); renderAll();
+          const totalItems = Object.values(items).reduce((a,cat)=>a+Object.keys(cat).length,0);
+          showToast('Zaimportowano dane','success', `Pozycji: ${totalItems}`);
+        }catch(err){ showToast('Błąd importu','error', err.message); }
+        evt.target.value='';
+      };
+      reader.readAsText(file);
+    }
+
+    /* ===================== Orders & History ===================== */
+    function placeOrder(){
+      const lines=[];
+      Object.keys(items).forEach(cat=>{
+        Object.keys(items[cat]).forEach(id=>{
+          const it=items[cat][id];
+          if(query && !it.name.toLowerCase().includes(query)) return; // tylko widoczne
+          const q=cart[id]||0;
+          if(q>0){
+            const price=it.prices[currentTier]||0;
+            lines.push({id, name:it.name, unit:it.unit, qty:q, price, subtotal:q*price});
+          }
+        });
+      });
+      if(lines.length===0){ showToast('Koszyk jest pusty','error'); return; }
+      const total = lines.reduce((a,b)=>a+b.subtotal,0);
+      const order = { id:uid(), at:new Date().toISOString(), tier:currentTier, items:lines, total };
+      addOrderToHistory(order);
+      showToast('Zamówienie złożone (demo)','success', `Suma: ${formatPrice(total)}`);
+      resetCart();
+    }
+    function getHistory(){
+      try{ return JSON.parse(localStorage.getItem('orderHistory')||'[]'); }
+      catch{ return []; }
+    }
+    function saveHistory(arr){ localStorage.setItem('orderHistory', JSON.stringify(arr)); }
+    function addOrderToHistory(order){ const hist=getHistory(); hist.unshift(order); saveHistory(hist); }
+
+    function openHistory(){ $('#historyModal').style.display='flex'; renderHistory(); }
+    function closeHistory(){ $('#historyModal').style.display='none'; }
+    function renderHistory(){
+      const wrap=$('#historyWrap'); wrap.innerHTML='';
+      const hist=getHistory();
+      if(hist.length===0){ wrap.innerHTML='<div class="card" style="background:rgba(255,255,255,.04)">Brak zamówień.</div>'; return; }
+      const tbl=document.createElement('table');
+      const thead=document.createElement('thead');
+      thead.innerHTML='<tr><th>Data</th><th>ID</th><th>Pozycje</th><th>Tier</th><th>Suma</th><th>Akcje</th></tr>';
+      const tbody=document.createElement('tbody');
+      hist.forEach(o=>{
+        const tr=document.createElement('tr');
+        const date=new Date(o.at).toLocaleString();
+        const count=o.items.reduce((a,b)=>a+b.qty,0);
+        tr.innerHTML=`
+          <td>${date}</td>
+          <td>${o.id}</td>
+          <td>${count}</td>
+          <td>${o.tier}</td>
+          <td>${formatPrice(o.total)}</td>
+          <td>
+            <button class="btn btn-success" onclick='restoreOrder("${o.id}")'>Odtwórz</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+        const det=document.createElement('tr');
+        const details = o.items.map(it=>`${escapeHtml(it.name)} × ${it.qty} — ${formatPrice(it.price)} = ${formatPrice(it.subtotal)}`).join('<br>');
+        det.innerHTML = `<td colspan="6" style="font-size:13px;opacity:.9">${details}</td>`;
+        tbody.appendChild(det);
+      });
+      tbl.appendChild(thead); tbl.appendChild(tbody); wrap.appendChild(tbl);
+    }
+    function restoreOrder(orderId){
+      const hist=getHistory();
+      const o=hist.find(x=>x.id===orderId);
+      if(!o){ showToast('Nie znaleziono zamówienia','error'); return; }
+      let restored=0, missing=0;
+      Object.keys(cart).forEach(k=>cart[k]=0);
+      o.items.forEach(it=>{
+        if(findItemById(it.id)){ cart[it.id]=it.qty; restored+=it.qty; }
+        else missing+=it.qty;
+      });
+      renderAll();
+      showToast('Odtworzono koszyk','success', `Przywrócono: ${restored}${missing?`, brakujące: ${missing}`:''}`);
+      closeHistory();
+    }
+    function findItemById(id){
+      for(const cat of Object.keys(items)){ if(items[cat][id]) return items[cat][id]; }
+      return null;
+    }
+    function clearHistory(){
+      if(!confirm('Wyczyścić całą historię zamówień?')) return;
+      saveHistory([]); renderHistory(); showToast('Historia wyczyszczona','info');
+    }
+    function exportHistory(){
+      const hist=getHistory();
+      if(hist.length===0){ showToast('Brak historii do eksportu','error'); return; }
+      const blob=new Blob([JSON.stringify({orders:hist},null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='order-history.json';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      showToast('Wyeksportowano historię','success');
+    }
+
+    /* ===================== Edit Mode ===================== */
+    function toggleEditMode(){
+      if(currentUser!=='admin') return;
+      editMode=!editMode;
+      $('#editBtn').textContent='✏️ Tryb edycji: ' + (editMode?'WŁ':'WYŁ');
+      renderAll();
+    }
+
+    /* ===================== Boot ===================== */
+    (function boot(){
+      items = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      initCart();
+      $('#modalBackdrop').style.display='none';
+      $('#adminLoginModal').style.display='none';
+      $('#historyModal').style.display='none';
+    })();
+  </script>
+</body>
+</html>
